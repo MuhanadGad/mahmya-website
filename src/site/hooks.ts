@@ -1,6 +1,5 @@
 // Data hooks for the website: the catalog (packages, add-ons and their times,
-// from mahmya-back), plus weather and booking availability — those two aren't on
-// the backend yet, so they return static sample data and their screens are dimmed.
+// and live weather come from mahmya-back. Booking availability remains a preview.
 
 import { setAddOns } from '../../shared/addons.ts';
 import { setPackages } from '../../shared/packages.ts';
@@ -9,28 +8,12 @@ import { FALLBACK_TRIPS } from '../../shared/cloud.ts';
 import { packageOf } from '../../shared/packages.ts';
 import type { ProgramId } from '../../shared/catalog.ts';
 import type { CloudCatalog } from '../../shared/cloud.ts';
-import type { LiveWeather, PublicDay } from '../../shared/website.ts';
+import type { PublicDay } from '../../shared/website.ts';
 import { siteFetch } from './api';
 import { usePackages } from '../lib/packages';
 import { toSiteCatalog, type BackendCatalog } from './backend';
 
-/** Not on the backend yet: a typical calm, sunny week, shown as a preview. */
-function sampleWeather(): LiveWeather {
-  const today = islandToday();
-  return {
-    source: 'model',
-    updatedAt: new Date().toISOString(),
-    current: { temp: 27, wind: 14, condition: 'sunny' },
-    days: Array.from({ length: 7 }, (_, i) => ({ date: addDays(today, i), tempMax: 28 + (i % 3), tempMin: 21 + (i % 2), wind: 12 + ((i * 5) % 11), condition: i === 3 ? 'partly-cloudy' : 'sunny' })),
-    closeWind: 34,
-    partialWind: 29,
-  };
-}
-
-export function useWeather(): { weather: LiveWeather | null; failed: boolean; sample: true } {
-  const [weather] = useState(sampleWeather);
-  return { weather, failed: false, sample: true };
-}
+export { useWeather } from './weather';
 
 let catalogRequest: Promise<CloudCatalog> | null = null;
 let catalogLoaded: CloudCatalog | null = null;

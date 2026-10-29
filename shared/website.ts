@@ -58,7 +58,7 @@ export interface WebsiteSummary {
 
 // ── Live weather (Open-Meteo, cached on the server) ─────────────────────────
 
-export type WeatherCondition = 'sunny' | 'partly-cloudy' | 'cloudy' | 'fog' | 'rain' | 'storm';
+export type WeatherCondition = 'sunny' | 'partly-cloudy' | 'cloudy' | 'fog' | 'rain' | 'snow' | 'storm';
 
 export interface ForecastDay {
   date: string;
@@ -70,12 +70,13 @@ export interface ForecastDay {
 }
 
 export interface LiveWeather {
-  source: 'open-meteo' | 'model';
+  source: 'open-meteo';
+  location: { name: string; latitude: number; longitude: number; timezone: string };
   updatedAt: string;
-  current: { temp: number; wind: number; condition: WeatherCondition };
+  fetchedAt: string;
+  stale: boolean;
+  current: { temp: number; wind: number; condition: WeatherCondition; isDay: boolean };
   days: ForecastDay[];
-  closeWind: number;
-  partialWind: number;
 }
 
 // ── Public booking views ─────────────────────────────────────────────────────

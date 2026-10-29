@@ -2,12 +2,12 @@
 // set VITE_API_URL when the API lives on another origin.
 //
 // Catalog and enquiry/newsletter submissions are connected. Other calls (bookings,
-// availability, weather and visit counts) fail fast with
+// availability and visit counts) fail fast with
 // NOT_LIVE, and its screen is shown as a dimmed preview (components/Planned.tsx).
 
 const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
-const LIVE_PATHS = ['/public/catalog', '/public/enquiries', '/public/subscribe'];
+const LIVE_PATHS = ['/public/catalog', '/public/enquiries', '/public/subscribe', '/public/weather'];
 
 export const NOT_LIVE = 501;
 
@@ -21,11 +21,12 @@ export class SiteApiError extends Error {
   }
 }
 
-export async function siteFetch<T>(path: string, body?: unknown): Promise<T> {
+export async function siteFetch<T>(path: string, body?: unknown, options: { signal?: AbortSignal } = {}): Promise<T> {
   if (!isLive(path)) throw new SiteApiError(NOT_LIVE, 'This isn’t connected yet — it’s a preview of what’s coming.');
   let res: Response;
   try {
     res = await fetch(`${API_URL}/api${path}`, {
+      signal: options.signal,
       method: body === undefined ? 'GET' : 'POST',
       headers: body === undefined ? {} : { 'Content-Type': 'application/json' },
       body: body === undefined ? undefined : JSON.stringify(body),

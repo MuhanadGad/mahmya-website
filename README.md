@@ -27,7 +27,7 @@ In development Vite proxies `/api` to `API_PROXY_TARGET` (default `http://localh
 | Confirming a booking | Preview: no public booking endpoint yet, so the button is disabled |
 | Date availability (places left) | Preview: static sample, every future day open with 120 places |
 | Trip extras (snorkelling trip, lunch) | Preview: these are backend add-ons now |
-| Weather (hero card) | Preview: static sample week |
+| Weather (homepage card and forecast card) | **Live**: `GET /api/public/weather` (Open-Meteo, cached by mahmya-back); shows "Weather unavailable" when there's no recent reading |
 | Find / cancel my booking, My Profile lookup | Preview: form disabled |
 | Event and contact enquiries, newsletter | **Live**: validated submissions to mahmya-back; staff see enquiries and subscribers in the dashboard |
 | Visit and booking-started counts | Off: nothing is sent |
