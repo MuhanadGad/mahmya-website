@@ -5,7 +5,8 @@
 import { Link } from 'react-router-dom';
 import { Mail } from 'lucide-react';
 import type { OutletId } from '../../data/catalog';
-import { MENU_FILES, OUTLETS, type Outlet } from '../content';
+import { OUTLETS, type Outlet } from '../content';
+import { useMenus } from '../hooks';
 import clock from '../../assets/home/v2/clock-dark.svg';
 import clockSolid from '../../assets/home/v2/clock-solid.svg';
 import download from '../../assets/home/v2/download.svg';
@@ -22,12 +23,11 @@ const PHOTOS: Record<OutletId, { src: string; position?: string }> = {
   smoothie: { src: smoothie },
 };
 
-/** "Download Menu" when the PDF exists; otherwise the contact form, ready to ask for it. */
-function MenuButton({ outlet }: { outlet: Outlet }) {
-  const file = MENU_FILES[outlet.id];
+/** "Download Menu" when a menu was uploaded (a PDF or image, opened in a new tab); otherwise the contact form, ready to ask for it. */
+function MenuButton({ outlet, file }: { outlet: Outlet; file?: string }) {
   if (file) {
     return (
-      <a className="h-menu-btn" href={file} download aria-label={`Download the ${outlet.name} menu (PDF)`}>
+      <a className="h-menu-btn" href={file} target="_blank" rel="noreferrer" download aria-label={`Download the ${outlet.name} menu (opens in a new tab)`}>
         <img src={download} alt="" width={16} height={16} />
         Download Menu
       </a>
@@ -42,6 +42,7 @@ function MenuButton({ outlet }: { outlet: Outlet }) {
 }
 
 export function HomeDining({ cta = true }: { cta?: boolean }) {
+  const menus = useMenus();
   return (
     <section className="h-dining" id="dining" aria-labelledby="h-dining-title">
       <header className="h-dining-head">
@@ -74,7 +75,7 @@ export function HomeDining({ cta = true }: { cta?: boolean }) {
                   {o.hours}
                 </p>
               </div>
-              <MenuButton outlet={o} />
+              <MenuButton outlet={o} file={menus[o.id]} />
             </div>
           </article>
         ))}

@@ -173,11 +173,12 @@ export const REVIEWS: Review[] = [
 export const DINING_NOTE = 'All venues open daily. Hours may vary by season.';
 
 /**
- * Menu PDFs for the dining cards' "Download Menu" buttons. Put the files in
- * public/menus/ and list them here (e.g. buffet: '/menus/island-buffet.pdf');
- * until then the card offers to send the menu on request.
+ * Fallback menus for the dining cards' "Download Menu" buttons. Staff upload the
+ * real ones in the dashboard (Website → Dining menus), served by /api/public/menus;
+ * an outlet with neither offers to send the menu on request.
  */
-export const MENU_FILES: Partial<Record<Outlet['id'], string>> = {};
+export type MenuFiles = Partial<Record<Outlet['id'], string>>;
+export const MENU_FILES: MenuFiles = {};
 
 // ── Guest information ────────────────────────────────────────────────────────
 

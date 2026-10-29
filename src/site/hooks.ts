@@ -12,8 +12,35 @@ import type { PublicDay } from '../../shared/website.ts';
 import { siteFetch } from './api';
 import { usePackages } from '../lib/packages';
 import { toSiteCatalog, type BackendCatalog } from './backend';
+import { MENU_FILES, type MenuFiles } from './content';
 
 export { useWeather } from './weather';
+
+let menusRequest: Promise<MenuFiles> | null = null;
+let menusLoaded: MenuFiles | null = null;
+
+/** Outlet → menu file uploaded in the dashboard; MENU_FILES until loaded, or if they can't be. */
+export function useMenus(): MenuFiles {
+  const [menus, setMenus] = useState<MenuFiles>(menusLoaded ?? MENU_FILES);
+  useEffect(() => {
+    let alive = true;
+    menusRequest ??= siteFetch<MenuFiles>('/public/menus').then(
+      (loaded) => (menusLoaded = { ...MENU_FILES, ...loaded }),
+      (err) => {
+        menusRequest = null;
+        throw err;
+      },
+    );
+    menusRequest.then(
+      (m) => alive && setMenus(m),
+      () => undefined,
+    );
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return menus;
+}
 
 let catalogRequest: Promise<CloudCatalog> | null = null;
 let catalogLoaded: CloudCatalog | null = null;
@@ -53,36 +80,37 @@ export interface Availability {
   days: Map<string, PublicDay>;
 }
 
-const SAMPLE_PLACES = 120;
+/** Places have no limit: a day is open or not. Comparisons with a party size always pass. */
+export const NO_LIMIT = Number.POSITIVE_INFINITY;
 
-/** Not on the backend yet: every future day open on the package's boats, with a fixed number of places. */
-function sampleDay(date: string, today: string, program: ProgramId | null): PublicDay {
-  const past = date < today;
+/**
+ * The booking rule mahmya-back enforces: book at least a day ahead (tomorrow or later, island time), on
+ * the boats the package sails on. There's no limit on places.
+ */
+function openDay(date: string, today: string, program: ProgramId | null): PublicDay {
+  const past = date <= today;
   const times = program ? packageOf(program)?.times : undefined;
   const trips = Object.fromEntries(
     FALLBACK_TRIPS.map((t) => {
       const sold = !past && !times?.[t.code]?.off;
-      return [t.code, { remaining: sold ? SAMPLE_PLACES : 0, bookable: sold, reason: past ? 'past' : sold ? null : 'closed' }] as const;
+      return [t.code, { remaining: sold ? NO_LIMIT : 0, bookable: sold, reason: past ? 'past' : sold ? null : 'closed' }] as const;
     }),
   );
   const bookable = Object.values(trips).some((t) => t.bookable);
-  return { date, remaining: bookable ? SAMPLE_PLACES : 0, bookable, closed: false, trips, addOns: {} };
+  return { date, remaining: bookable ? NO_LIMIT : 0, bookable, closed: false, trips, addOns: {} };
 }
 
-/**
- * Places left per day and boat between two dates, for one package or the best of
- * them. Static sample data until the backend has an availability endpoint.
- */
-export function useAvailability(from: string | null, to: string | null, _refreshKey = 0, program: ProgramId | null = null): { data: Availability | null; loading: boolean; error: string | null; sample: true } {
+/** Which days and boats can be booked between two dates, for one package or any of them. */
+export function useAvailability(from: string | null, to: string | null, _refreshKey = 0, program: ProgramId | null = null): { data: Availability | null; loading: boolean; error: string | null } {
   const packages = usePackages(); // a package's boats change when the catalog arrives
   const data = useMemo(() => {
     if (!from || !to) return null;
     const today = islandToday();
     const days = new Map<string, PublicDay>();
-    for (let d = from; d <= to; d = addDays(d, 1)) days.set(d, sampleDay(d, today, program));
+    for (let d = from; d <= to; d = addDays(d, 1)) days.set(d, openDay(d, today, program));
     return { days };
   }, [from, to, program, packages]);
-  return { data, loading: false, error: null, sample: true };
+  return { data, loading: false, error: null };
 }
 
 /** Island date today (Africa/Cairo), YYYY-MM-DD. */
