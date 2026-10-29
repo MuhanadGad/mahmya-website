@@ -1,13 +1,13 @@
 // Website → mahmya-back API calls. Same origin in development (Vite proxies /api);
 // set VITE_API_URL when the API lives on another origin.
 //
-// Only LIVE_PATHS exist on the backend so far. Every other call (bookings,
-// availability, weather, enquiries, newsletter, visit counts) fails fast with
+// Catalog and enquiry/newsletter submissions are connected. Other calls (bookings,
+// availability, weather and visit counts) fail fast with
 // NOT_LIVE, and its screen is shown as a dimmed preview (components/Planned.tsx).
 
 const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
-const LIVE_PATHS = ['/public/catalog'];
+const LIVE_PATHS = ['/public/catalog', '/public/enquiries', '/public/subscribe'];
 
 export const NOT_LIVE = 501;
 
@@ -35,8 +35,8 @@ export async function siteFetch<T>(path: string, body?: unknown): Promise<T> {
     throw new SiteApiError(0, 'We couldn’t reach Mahmya right now. Check your connection and try again.');
   }
   // mahmya-back errors are { error: { code, message } }.
-  const data = (await res.json().catch(() => ({}))) as { error?: { message?: string } };
-  if (!res.ok) throw new SiteApiError(res.status, data.error?.message ?? 'Something went wrong. Please try again.');
+  const data = (await res.json().catch(() => ({}))) as { error?: { message?: string; issues?: { path?: (string | number)[]; message?: string }[] } };
+  if (!res.ok) throw new SiteApiError(res.status, data.error?.issues?.map((issue) => `${issue.path?.join('.') || 'Input'}: ${issue.message}`).join(' · ') || data.error?.message || 'Something went wrong. Please try again.');
   return data as T;
 }
 

@@ -29,7 +29,7 @@ In development Vite proxies `/api` to `API_PROXY_TARGET` (default `http://localh
 | Trip extras (snorkelling trip, lunch) | Preview: these are backend add-ons now |
 | Weather (hero card) | Preview: static sample week |
 | Find / cancel my booking, My Profile lookup | Preview: form disabled |
-| Event and contact enquiries, newsletter | Preview: form disabled |
+| Event and contact enquiries, newsletter | **Live**: validated submissions to mahmya-back; staff see enquiries and subscribers in the dashboard |
 | Visit and booking-started counts | Off: nothing is sent |
 | Island, activities, dining, gallery, reviews, FAQ, terms | Static content from the design, the same as the demo |
 
@@ -47,3 +47,7 @@ Until the catalog loads, or if the backend can't be reached, the pages show the 
 - **Child price:** the backend's exact `childPrice`.
 - **Add-ons:** a package offers every active add-on it doesn't already include. Water add-ons are matched to the activity cards by name (kayak, SUP/paddle, Sea-Spi, banana, ringo).
 - **Not on the backend yet:** "Most popular" (`featured`), add-on daily limits and an EGP price are left empty or off.
+
+## Contact, event and newsletter submissions
+
+Contact and event forms submit to `POST /api/public/enquiries`; the footer uses `POST /api/public/subscribe`. Successful forms show confirmation, validation/network errors remain visible, and duplicate newsletter signups show an already-subscribed message. The backend normalizes emails, rejects the hidden spam field, and rate-limits submissions. Guest accounts are not required. Staff manage enquiries at the dashboard’s `/website/enquiries` and newsletter subscribers at `/website/subscribers`. Submission does not send an email automatically.

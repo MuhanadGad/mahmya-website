@@ -3,12 +3,8 @@
 import { useState, type FormEvent } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { EVENT_TYPES, type EnquiryType } from '../../../shared/website.ts';
-import { isLive, siteFetch } from '../api';
+import { siteFetch } from '../api';
 import { islandToday } from '../hooks';
-import { Planned } from './Planned';
-
-/** mahmya-back has no enquiries inbox yet. */
-const LIVE = isLive('/public/enquiries');
 
 export function EnquiryForm({ type, initialMessage = '' }: { type: EnquiryType; initialMessage?: string }) {
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: initialMessage, eventType: EVENT_TYPES[0] as string, eventDate: '', guests: '' });
@@ -20,6 +16,7 @@ export function EnquiryForm({ type, initialMessage = '' }: { type: EnquiryType; 
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -51,8 +48,7 @@ export function EnquiryForm({ type, initialMessage = '' }: { type: EnquiryType; 
   }
 
   return (
-    <Planned what="Enquiries">
-      <form className="s-form" onSubmit={submit} noValidate>
+      <form className="s-form" onSubmit={submit}>
         {type === 'event' && (
           <div className="s-form-row three">
             <label>
@@ -76,22 +72,22 @@ export function EnquiryForm({ type, initialMessage = '' }: { type: EnquiryType; 
         <div className="s-form-row">
           <label>
             <span>Full name</span>
-            <input autoComplete="name" value={form.name} onChange={set('name')} required />
+            <input autoComplete="name" maxLength={200} value={form.name} onChange={set('name')} required />
           </label>
           <label>
             <span>Email</span>
-            <input type="email" autoComplete="email" value={form.email} onChange={set('email')} required />
+            <input type="email" autoComplete="email" maxLength={254} value={form.email} onChange={set('email')} required />
           </label>
         </div>
         <label>
           <span>
             Phone <em>(optional)</em>
           </span>
-          <input type="tel" autoComplete="tel" value={form.phone} onChange={set('phone')} placeholder="+20 …" />
+          <input type="tel" autoComplete="tel" maxLength={40} value={form.phone} onChange={set('phone')} placeholder="+20 …" />
         </label>
         <label>
           <span>{type === 'event' ? 'Tell us about your event' : 'Your message'}</span>
-          <textarea rows={5} value={form.message} onChange={set('message')} required placeholder={type === 'event' ? 'Occasion, timing, catering or décor ideas…' : 'How can we help?'} />
+          <textarea rows={5} maxLength={5000} value={form.message} onChange={set('message')} required placeholder={type === 'event' ? 'Occasion, timing, catering or décor ideas…' : 'How can we help?'} />
         </label>
         <input className="s-hp" tabIndex={-1} autoComplete="off" aria-hidden name="website" value={trap} onChange={(e) => setTrap(e.target.value)} />
         {error && (
@@ -99,11 +95,10 @@ export function EnquiryForm({ type, initialMessage = '' }: { type: EnquiryType; 
             {error}
           </p>
         )}
-        <button type="submit" className="s-btn s-btn-primary s-btn-lg" disabled={busy || !LIVE || !form.name || !form.email || !form.message}>
+        <button type="submit" className="s-btn s-btn-primary s-btn-lg" disabled={busy || !form.name.trim() || !form.email.trim() || !form.message.trim()}>
           {busy ? 'Sending…' : type === 'event' ? 'Send event enquiry' : 'Send message'}
         </button>
         <p className="s-fine">We use your details only to reply to this enquiry.</p>
       </form>
-    </Planned>
   );
 }

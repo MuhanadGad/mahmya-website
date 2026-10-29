@@ -5,7 +5,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
-import { isLive, siteFetch } from '../api';
+import { siteFetch } from '../api';
 import { LINKS } from '../content';
 import eventsWave from '../../assets/site/footer/events-wave.png';
 import logo from '../../assets/site/footer/logo.svg';
@@ -15,7 +15,6 @@ import facebook from '../../assets/site/footer/facebook.svg';
 import tiktok from '../../assets/site/footer/tiktok.svg';
 import tripadvisor from '../../assets/site/footer/tripadvisor.svg';
 import beachTile from '../../assets/site/footer/beach-tile.jpg';
-import { Planned } from './Planned';
 
 const YEAR = new Date().getFullYear();
 
@@ -57,6 +56,7 @@ function Newsletter() {
 
   async function submit(e: FormEvent) {
     e.preventDefault();
+    if (state.kind === 'busy') return;
     setState({ kind: 'busy' });
     try {
       const res = await siteFetch<{ alreadySubscribed: boolean }>('/public/subscribe', { email, website: trap, source: 'footer' });
@@ -68,17 +68,16 @@ function Newsletter() {
   }
 
   return (
-    <Planned what="Newsletter">
-      <form className="s-newsletter" onSubmit={submit} noValidate>
+      <form className="s-newsletter" onSubmit={submit}>
         <p className="s-footer-strong">Keep Updated on Mahmya Island</p>
         <p className="s-footer-muted">Add your email to receive the latest Mahmya Island news.</p>
         <div className="s-newsletter-field">
           <label htmlFor="s-newsletter-email" className="s-sr-only">
             Your email
           </label>
-          <input id="s-newsletter-email" type="email" autoComplete="email" placeholder="Your Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input id="s-newsletter-email" type="email" autoComplete="email" maxLength={254} placeholder="Your Email" value={email} onChange={(e) => setEmail(e.target.value)} required />
           <input className="s-hp" tabIndex={-1} autoComplete="off" aria-hidden name="website" value={trap} onChange={(e) => setTrap(e.target.value)} />
-          <button type="submit" className="s-btn s-btn-subscribe" disabled={state.kind === 'busy' || !isLive('/public/subscribe')}>
+          <button type="submit" className="s-btn s-btn-subscribe" disabled={state.kind === 'busy'}>
             {state.kind === 'busy' ? 'Subscribing…' : 'Subscribe'}
           </button>
         </div>
@@ -88,7 +87,6 @@ function Newsletter() {
           </p>
         )}
       </form>
-    </Planned>
   );
 }
 
