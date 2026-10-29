@@ -2,8 +2,8 @@
 // 275:10511) and its confirmation (275:10696): 1 program, date and boat (live
 // availability); 2 guests, extras and add-ons; 3 the lead guest's details; 4
 // payment. The booking summary beside every step previews the price with the
-// same quote and rate the server uses; the server re-prices and re-checks
-// capacity with the cloud system when the booking is confirmed.
+// live catalog; mahmya-back prices the booking again when it's sent, and it
+// arrives pending until Mahmya staff confirm it.
 
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -14,7 +14,7 @@ import { UNIT_LABEL, getAddOns, type AddOn } from '../../../shared/addons.ts';
 import { EXTRA_LABEL, NO_EXTRAS, PRIVATE_BOAT_MAX, maxQuantity, payingGuests, quote, type AddOnSelection, type GuestMix, type TripExtras } from '../../../shared/reservations.ts';
 import { FREE_CANCELLATION_HOURS, GROUPS_MIN_PARTY, WEBSITE_MAX_PARTY, type PublicBooking, type PublicTripDay } from '../../../shared/website.ts';
 import { isLive, siteFetch, track } from '../api';
-import { Planned } from '../components/Planned';
+import { slotOfTrip, toPublicBooking, type BackendPublicBooking } from '../backend';
 import { Calendar } from '../components/Calendar';
 import { formatVisitDate, usePageTitle } from '../format';
 import type { ProgramId } from '../content';
@@ -86,7 +86,7 @@ const STEPS: { n: Step; label: string }[] = [
 /** Why a boat can't be booked on the chosen date, for the guest. */
 function tripProblem(info: PublicTripDay, trip: Trip): string {
   if (info.reason === 'closed') return `The ${trip.name} isn’t running on this date.`;
-  if (info.reason === 'past') return `Same-day bookings for the ${trip.name} have closed.`;
+  if (info.reason === 'past') return 'Online bookings close the day before your visit. Choose tomorrow or later, or call us to come today.';
   if (info.reason === 'no-price') return 'Prices for this date aren’t published yet.';
   if (info.reason === 'too-far') return 'Online bookings open up to a year ahead.';
   return info.remaining > 0 ? `Only ${info.remaining} places left on the ${trip.name}.` : `The ${trip.name} is fully booked on this date.`;
@@ -190,7 +190,6 @@ export default function Book() {
   const [lead, setLead] = useState(() => ({ name: saved?.name ?? '', email: saved?.email ?? '', nationality: saved?.nationality ?? '', hotel: saved?.hotel ?? '', document: '', groupRef: '', notes: '' }));
   const [dial, setDial] = useState(savedDial ?? '+20');
   const [phone, setPhone] = useState(() => (saved?.phone ? saved.phone.replace(savedDial ?? '', '').trim() : ''));
-  const [extrasWanted, setExtras] = useState<TripExtras>(NO_EXTRAS);
   const [remember, setRemember] = useState(!!saved);
   const [terms, setTerms] = useState(false);
   const [trap, setTrap] = useState('');
@@ -223,9 +222,9 @@ export default function Book() {
 
   // Quantities are kept within what the party can use (e.g. after removing guests).
   const selections: AddOnSelection[] = useMemo(() => offered.map((a) => ({ id: a.id, quantity: Math.min(addOns[a.id] ?? 0, maxQuantity(a, guests)) })).filter((s) => s.quantity > 0), [addOns, guests, offered]);
-  // Extras stay within the paying guests, and lunch isn't added where the package includes it.
+  // Snorkelling and lunch are add-ons in mahmya-back now, offered with the others below.
+  const extras: TripExtras = NO_EXTRAS;
   const lunchIncluded = includesLunch(program);
-  const extras: TripExtras = { snorkeling: Math.min(extrasWanted.snorkeling, paying), lunch: lunchIncluded ? 0 : Math.min(extrasWanted.lunch, paying) };
   const extraPrices = catalog?.extraPrices ?? NO_EXTRAS;
   const rate = bookingRate(catalog, program, trip, date ?? TODAY);
   const priced = quote({ programId: program, guests, addOns: selections, extras, discountPct: 0, visitDate: date ?? TODAY }, rate, extraPrices);
@@ -263,19 +262,18 @@ export default function Book() {
     setError(null);
     try {
       const fullPhone = `${dial} ${phone.trim()}`;
-      const result = await siteFetch<PublicBooking>('/public/bookings', {
-        programId: program,
-        visitDate: date,
-        tripCode: trip,
+      const notes = [lead.notes.trim(), lead.groupRef.trim() && `Group or voucher reference: ${lead.groupRef.trim()}`].filter(Boolean).join('\n');
+      const result = toPublicBooking(await siteFetch<BackendPublicBooking>('/public/bookings', {
+        packageId: program,
+        tripDate: date,
+        slot: slotOfTrip(trip),
         guests,
-        addOns: selections,
-        extras,
-        groupRef: lead.groupRef,
-        leadGuest: { name: lead.name, email: lead.email, phone: fullPhone, nationality: lead.nationality, hotel: lead.hotel, document: lead.document },
-        notes: lead.notes,
+        addons: selections.map((s) => ({ addonId: s.id, quantity: s.quantity })),
+        lead: { name: lead.name.trim(), email: lead.email.trim(), phone: fullPhone, nationality: lead.nationality, hotel: lead.hotel.trim() || undefined, document: lead.document.trim() || undefined },
+        notes: notes || null,
         acceptTerms: terms,
         website: trap,
-      });
+      }));
       if (remember) {
         saveProfile({ name: lead.name.trim(), email: lead.email.trim(), phone: fullPhone, nationality: lead.nationality, hotel: lead.hotel.trim() });
         rememberBooking(result.code, result.email);
@@ -302,7 +300,6 @@ export default function Book() {
     1: { label: 'Continue to Step 2', ready: step1Ready, action: () => go(2), note: !date ? 'Choose a date to continue.' : boatProblem },
     2: { label: 'Continue to Step 3', ready: step2Ready, action: () => go(3), note: partyProblem ?? boatProblem },
     3: { label: 'Proceed to Payment', ready: step3Ready, action: () => go(4), note: detailsMissing },
-    // Not live: mahmya-back has no public booking endpoint yet, so the last step can't be sent.
     4: {
       label: busy ? 'Confirming…' : `Confirm Booking · ${eur(priced.total)}`,
       ready: isLive('/public/bookings') && step3Ready && !busy,
@@ -496,7 +493,7 @@ export default function Book() {
                             <span aria-hidden>{i === 0 ? '☀️' : '🌅'}</span>
                             {clock(t.departure)} - {clock(t.returnTime)}
                           </span>
-                          <span className="s-co-schedule-meta">{!date ? `Check in by ${formatTime(checkInTime(t))}` : !info ? 'Checking places…' : ok ? `Check in by ${formatTime(checkInTime(t))} · ${info.remaining} places left` : tripProblem(info, t)}</span>
+                          <span className="s-co-schedule-meta">{!date ? `Check in by ${formatTime(checkInTime(t))}` : !info ? 'Checking places…' : ok ? `Check in by ${formatTime(checkInTime(t))}${Number.isFinite(info.remaining) ? ` · ${info.remaining} places left` : ''}` : tripProblem(info, t)}</span>
                         </button>
                       );
                     })}
@@ -577,38 +574,12 @@ export default function Book() {
                   )}
                 </section>
 
-                <section className="s-co-block" aria-labelledby="co-extras">
+                {offered.length > 0 && <section className="s-co-block" aria-labelledby="co-extras">
                   <p className="s-co-eyebrow small">Optional Upgrades</p>
                   <h2 id="co-extras" className="s-co-title light">
                     Add Extras to Your Experience
                   </h2>
                   <div className="s-co-rows">
-                    <Planned what="Trip extras">
-                      {(['snorkeling', 'lunch'] as const)
-                        .filter((key) => key !== 'lunch' || !lunchIncluded)
-                        .map((key) => {
-                          const qty = extras[key];
-                          return (
-                            <div key={key} className="s-co-row extra">
-                              <span className="s-co-row-icon tint">
-                                <img src={key === 'snorkeling' ? extraWaves : extraGoggles} alt="" width={24} height={24} />
-                              </span>
-                              <span className="s-co-row-text">
-                                <b>{key === 'snorkeling' ? 'Guided Snorkeling Trip' : 'Lunch'}</b>
-                                <small>{key === 'snorkeling' ? 'The snorkelling boat leaves the island for the reef stop of your schedule.' : 'Lunch at the island buffet for guests whose package doesn’t include it.'}</small>
-                              </span>
-                              <span className="s-co-row-price">
-                                <b>{extraPrices[key] ? eur(extraPrices[key]) : 'Free'}</b>
-                                <small>per guest</small>
-                              </span>
-                              <span className="s-co-row-action">
-                                {qty > 0 && <Counter label={EXTRA_LABEL[key]} value={qty} min={1} max={paying} onChange={(v) => setExtras((cur) => ({ ...cur, [key]: v }))} />}
-                                <Toggle label={EXTRA_LABEL[key]} on={qty > 0} onChange={(v) => setExtras((cur) => ({ ...cur, [key]: v ? paying : 0 }))} />
-                              </span>
-                            </div>
-                          );
-                        })}
-                    </Planned>
                     {offered.map((a: AddOn) => {
                       const left = dayInfo?.addOns[a.id];
                       const cap = Math.max(0, Math.min(maxQuantity(a, guests), left ?? Infinity));
@@ -639,7 +610,7 @@ export default function Book() {
                     })}
                   </div>
                   {lunchIncluded && <p className="s-co-hint">Lunch is included in {packageName(program)}.</p>}
-                </section>
+                </section>}
 
                 <section className="s-co-block" aria-labelledby="co-notes">
                   <h2 id="co-notes" className="s-co-question">
@@ -774,8 +745,7 @@ export default function Book() {
           <>
             <div className="s-co-grid">
               <div className="s-co-main">
-                <Planned what="Online booking">
-                  <section className="s-co-block" aria-labelledby="co-pay">
+                <section className="s-co-block" aria-labelledby="co-pay">
                     <p className="s-co-eyebrow small">Step 04</p>
                     <h1 id="co-pay" className="s-co-title light">
                       Secure Payment
@@ -787,7 +757,7 @@ export default function Book() {
                     </div>
                     <div className="s-co-bento s-co-paynote">
                       <p>
-                        <b>No card needed now.</b> Your places are reserved as soon as you confirm. Pay the total of <b>{eur(priced.total)}</b>
+                        <b>No card needed now.</b> Your booking goes to our team, who confirm it shortly; check it any time under Manage booking. Pay the total of <b>{eur(priced.total)}</b>
                         {rateEgp ? <> (about EGP {egp(Math.round(priced.total * rateEgp))})</> : null} at Mahmya Beach Marina when you check in — by card or in cash.
                       </p>
                     </div>
@@ -805,7 +775,6 @@ export default function Book() {
                       </span>
                     </div>
                   </section>
-                </Planned>
               </div>
               {summary(4)}
             </div>
@@ -829,8 +798,17 @@ function Confirmation({ booking, rateEgp, extrasText }: { booking: PublicBooking
           <span className="s-co-done-mark" aria-hidden>
             <Check size={44} strokeWidth={3} />
           </span>
-          <h1 id="co-done">Booking Confirmed!</h1>
-          <p>Your Mahmya Island adventure is booked! Get ready to experience paradise.</p>
+          {booking.status === 'pending' ? (
+            <>
+              <h1 id="co-done">Booking Received!</h1>
+              <p>Thank you! Our team will confirm your Mahmya Island day shortly. Check its status any time under Manage booking.</p>
+            </>
+          ) : (
+            <>
+              <h1 id="co-done">Booking Confirmed!</h1>
+              <p>Your Mahmya Island adventure is booked! Get ready to experience paradise.</p>
+            </>
+          )}
           <p className="s-co-ref">
             <small>Booking reference:</small> <strong>{booking.code}</strong>
           </p>
@@ -875,7 +853,7 @@ function Confirmation({ booking, rateEgp, extrasText }: { booking: PublicBooking
               <dl>
                 <div>
                   <dt>Selected Program</dt>
-                  <dd>{packageName(booking.programId)}</dd>
+                  <dd>{booking.programName ?? packageName(booking.programId)}</dd>
                 </div>
                 <div>
                   <dt>Date</dt>

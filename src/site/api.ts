@@ -1,13 +1,13 @@
 // Website → mahmya-back API calls. Same origin in development (Vite proxies /api);
 // set VITE_API_URL when the API lives on another origin.
 //
-// Catalog and enquiry/newsletter submissions are connected. Other calls (bookings,
-// availability and visit counts) fail fast with
+// Catalog, weather, enquiry/newsletter submissions and bookings (book, look up, list,
+// cancel) are connected. Other calls (availability and visit counts) fail fast with
 // NOT_LIVE, and its screen is shown as a dimmed preview (components/Planned.tsx).
 
 const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
-const LIVE_PATHS = ['/public/catalog', '/public/enquiries', '/public/subscribe', '/public/weather'];
+const LIVE_PATHS = ['/public/catalog', '/public/enquiries', '/public/subscribe', '/public/weather', '/public/bookings', '/public/bookings/lookup', '/public/bookings/mine', '/public/bookings/cancel', '/public/menus'];
 
 export const NOT_LIVE = 501;
 

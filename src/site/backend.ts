@@ -5,9 +5,10 @@
 // add-on limits, photos from the site's library) is filled in here.
 
 import type { AddOn, AddOnUnit, PaidActivityId } from '../../shared/addons.ts';
-import { FALLBACK_TRIPS, type CloudCatalog } from '../../shared/cloud.ts';
+import { FALLBACK_TRIPS, checkInTime, type CloudCatalog } from '../../shared/cloud.ts';
 import type { PackageDef, PackageTimes } from '../../shared/packages.ts';
-import { NO_EXTRAS } from '../../shared/reservations.ts';
+import { NO_EXTRAS, type ReservationStatus } from '../../shared/reservations.ts';
+import type { PublicBooking } from '../../shared/website.ts';
 
 type TripSlot = 'DAY' | 'SUNSET';
 
@@ -134,5 +135,65 @@ export function toSiteCatalog(c: BackendCatalog): CloudCatalog {
     extraPrices: NO_EXTRAS,
     packages: c.packages.map((p, i) => toPackage(p, addOns, (i + 1) * 10)),
     addOns,
+  };
+}
+
+// ── Bookings ─────────────────────────────────────────────────────────────────
+
+/** A website guest's booking as mahmya-back returns it (POST /api/public/bookings and the lookups). */
+export interface BackendPublicBooking {
+  code: string;
+  status: 'PENDING' | 'CONFIRMED' | 'CHECKED_IN' | 'COMPLETED' | 'CANCELLED' | 'NO_SHOW';
+  tripDate: string;
+  slot: TripSlot;
+  leaveTime: string;
+  returnTime: string;
+  package: { id: string; name: string };
+  guests: { adults: number; children: number; infants: number };
+  included: string[];
+  addons: { id: string; name: string; quantity: number; unitPrice: string; lineTotal: string }[];
+  adultPrice: string;
+  childPrice: string;
+  totals: { packageTotal: string; addonsTotal: string; discountAmount: string; total: string };
+  contactName: string;
+  contactEmail: string;
+  createdAt: string;
+  cancellable: boolean;
+}
+
+const STATUS: Record<BackendPublicBooking['status'], ReservationStatus> = {
+  PENDING: 'pending', CONFIRMED: 'confirmed', CHECKED_IN: 'checked-in', COMPLETED: 'completed', CANCELLED: 'cancelled', NO_SHOW: 'no-show',
+};
+
+/** The backend's trip slot for one of the website's boat schedule codes. */
+export const slotOfTrip = (code: string): TripSlot => (code === SLOT_TRIP.SUNSET ? 'SUNSET' : 'DAY');
+
+/** The backend's booking in the website's shape: its schedule, price lines and status. */
+export function toPublicBooking(b: BackendPublicBooking): PublicBooking {
+  const trip = FALLBACK_TRIPS.find((t) => t.code === SLOT_TRIP[b.slot]) ?? FALLBACK_TRIPS[0];
+  const adultPrice = Number(b.adultPrice), childPrice = Number(b.childPrice);
+  const lines = [
+    { id: 'adult', label: 'Adults', quantity: b.guests.adults, unitPrice: adultPrice, total: adultPrice * b.guests.adults },
+    ...(b.guests.children ? [{ id: 'child', label: 'Children', quantity: b.guests.children, unitPrice: childPrice, total: childPrice * b.guests.children }] : []),
+    ...(b.guests.infants ? [{ id: 'infant', label: 'Infants', quantity: b.guests.infants, unitPrice: 0, total: 0 }] : []),
+    ...b.included.map((name) => ({ id: `included:${name}`, label: name, quantity: 1, unitPrice: 0, total: 0 })),
+    ...b.addons.map((a) => ({ id: a.id, label: a.name, quantity: a.quantity, unitPrice: Number(a.unitPrice), total: Number(a.lineTotal) })),
+  ];
+  const programTotal = Number(b.totals.packageTotal), addOnsTotal = Number(b.totals.addonsTotal);
+  return {
+    code: b.code,
+    status: STATUS[b.status],
+    visitDate: b.tripDate,
+    schedule: { code: trip.code, name: trip.name, checkIn: checkInTime({ ...trip, departure: b.leaveTime }), departure: b.leaveTime, returnTime: b.returnTime },
+    programId: b.package.id,
+    programName: b.package.name,
+    guests: b.guests,
+    addOns: b.addons.map((a) => ({ id: a.id, quantity: a.quantity })),
+    quote: { lines, programTotal, addOnsTotal, subtotal: programTotal + addOnsTotal, discount: Number(b.totals.discountAmount), total: Number(b.totals.total), currency: 'EUR' },
+    paymentStatus: 'unpaid', // payments aren't recorded yet: guests pay at the marina
+    leadName: b.contactName,
+    email: b.contactEmail,
+    createdAt: b.createdAt,
+    cancellable: b.cancellable,
   };
 }

@@ -17,11 +17,12 @@ export const PRIVATE_BOAT_MAX = 12;
 export const MAX_DISCOUNT_PCT = 10;
 export const MAX_OVERRIDE_DISCOUNT_PCT = 50;
 
-export type ReservationStatus = 'confirmed' | 'checked-in' | 'completed' | 'cancelled' | 'no-show';
+export type ReservationStatus = 'pending' | 'confirmed' | 'checked-in' | 'completed' | 'cancelled' | 'no-show';
 export type PaymentStatus = 'unpaid' | 'deposit' | 'paid' | 'refunded';
 export type PaymentMethod = 'card' | 'cash' | 'bank-transfer' | 'invoice' | 'voucher';
 
 export const STATUS_LABEL: Record<ReservationStatus, string> = {
+  pending: 'Awaiting confirmation',
   confirmed: 'Confirmed',
   'checked-in': 'Checked in',
   completed: 'Completed',

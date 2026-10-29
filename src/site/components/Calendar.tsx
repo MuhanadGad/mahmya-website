@@ -1,6 +1,6 @@
-// Month calendar with availability (static sample until the backend has it) (best boat for the chosen package):
-// closed, sold-out and unpriced days and days that can't fit the party are
-// disabled; low availability is flagged.
+// Month calendar of the days that can be booked online for the chosen package: tomorrow onwards on
+// the boats it sails on (today and earlier are closed). Places have no limit; if one is set later,
+// sold-out days and days that can't fit the party are disabled and low availability is flagged.
 
 import { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -9,7 +9,6 @@ import type { PublicDay } from '../../../shared/website.ts';
 import { addDays, islandToday, useAvailability } from '../hooks';
 import arrowLeft from '../../assets/site/checkout/arrow-left.svg';
 import arrowRight from '../../assets/site/checkout/arrow-right.svg';
-import { Planned } from './Planned';
 
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
 const WEEKDAYS_SUN = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -27,6 +26,7 @@ function shiftMonth(month: string, delta: number): string {
 function unavailableLabel(day: PublicDay): string {
   if (day.closed) return 'Closed — no sailings';
   const reasons = Object.values(day.trips).map((t) => t.reason);
+  if (reasons.length > 0 && reasons.every((r) => r === 'past')) return 'Book online by the day before';
   return reasons.length > 0 && reasons.every((r) => r === 'no-price') ? 'Prices not published yet' : 'Not available online';
 }
 
@@ -44,68 +44,66 @@ export function Calendar({ value, onChange, party, program = null, checkout = fa
   const canGoBack = month > monthStart(today);
 
   return (
-    <Planned what="Availability">
-      <div className={`s-cal${checkout ? ' checkout' : ''}`}>
-        {checkout ? (
-          <div className="s-cal-head">
-            <p className="s-cal-month" aria-live="polite">
-              {label}
-            </p>
-            <span className="s-cal-arrows">
-              <button type="button" className="s-cal-nav" onClick={() => setMonth(shiftMonth(month, -1))} disabled={!canGoBack} aria-label="Previous month">
-                <img src={arrowLeft} alt="" width={26} height={26} />
-              </button>
-              <button type="button" className="s-cal-nav" onClick={() => setMonth(shiftMonth(month, 1))} aria-label="Next month">
-                <img src={arrowRight} alt="" width={26} height={26} />
-              </button>
-            </span>
-          </div>
-        ) : (
-          <div className="s-cal-head">
+    <div className={`s-cal${checkout ? ' checkout' : ''}`}>
+      {checkout ? (
+        <div className="s-cal-head">
+          <p className="s-cal-month" aria-live="polite">
+            {label}
+          </p>
+          <span className="s-cal-arrows">
             <button type="button" className="s-cal-nav" onClick={() => setMonth(shiftMonth(month, -1))} disabled={!canGoBack} aria-label="Previous month">
-              <ChevronLeft size={18} />
+              <img src={arrowLeft} alt="" width={26} height={26} />
             </button>
-            <p className="s-cal-month" aria-live="polite">
-              {label}
-            </p>
             <button type="button" className="s-cal-nav" onClick={() => setMonth(shiftMonth(month, 1))} aria-label="Next month">
-              <ChevronRight size={18} />
+              <img src={arrowRight} alt="" width={26} height={26} />
             </button>
-          </div>
-        )}
-        <div className="s-cal-grid" role="grid" aria-label={`Visit dates in ${label}`} aria-busy={loading}>
-          {(checkout ? WEEKDAYS_SUN : WEEKDAYS).map((w) => (
-            <span key={w} className="s-cal-wd" aria-hidden>
-              {w}
-            </span>
-          ))}
-          {cells.map((d, i) => {
-            if (!d) return <span key={`e${i}`} />;
-            const day = data?.days.get(d);
-            const full = day ? day.bookable && day.remaining <= 0 : false;
-            const closed = !!day?.closed && d >= today;
-            const tooSmall = day ? day.remaining < party : false;
-            const disabled = loading || !day || !day.bookable || tooSmall;
-            const low = day && !full && day.remaining <= 60;
-            const status = !day ? 'Loading' : !day.bookable ? unavailableLabel(day) : full ? 'Sold out' : tooSmall ? `Only ${day.remaining} places left` : `${day.remaining} places left`;
-            return (
-              <button
-                key={d}
-                type="button"
-                className={`s-cal-day${d === value ? ' selected' : ''}${d === today ? ' today' : ''}${full || closed ? ' full' : ''}`}
-                disabled={disabled}
-                onClick={() => onChange(d)}
-                aria-pressed={d === value}
-                aria-label={`${new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })} — ${status}`}
-              >
-                <span>{Number(d.slice(8))}</span>
-                {closed ? <small>Closed</small> : day?.bookable && (full ? <small>Full</small> : low ? <small>{day.remaining} left</small> : null)}
-              </button>
-            );
-          })}
+          </span>
         </div>
-        {error && <p className="s-form-note error">{error}</p>}
+      ) : (
+        <div className="s-cal-head">
+          <button type="button" className="s-cal-nav" onClick={() => setMonth(shiftMonth(month, -1))} disabled={!canGoBack} aria-label="Previous month">
+            <ChevronLeft size={18} />
+          </button>
+          <p className="s-cal-month" aria-live="polite">
+            {label}
+          </p>
+          <button type="button" className="s-cal-nav" onClick={() => setMonth(shiftMonth(month, 1))} aria-label="Next month">
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      )}
+      <div className="s-cal-grid" role="grid" aria-label={`Visit dates in ${label}`} aria-busy={loading}>
+        {(checkout ? WEEKDAYS_SUN : WEEKDAYS).map((w) => (
+          <span key={w} className="s-cal-wd" aria-hidden>
+            {w}
+          </span>
+        ))}
+        {cells.map((d, i) => {
+          if (!d) return <span key={`e${i}`} />;
+          const day = data?.days.get(d);
+          const full = day ? day.bookable && day.remaining <= 0 : false;
+          const closed = !!day?.closed && d >= today;
+          const tooSmall = day ? day.remaining < party : false;
+          const disabled = loading || !day || !day.bookable || tooSmall;
+          const low = day && !full && day.remaining <= 60;
+          const status = !day ? 'Loading' : d < today ? 'Past date' : !day.bookable ? unavailableLabel(day) : full ? 'Sold out' : tooSmall ? `Only ${day.remaining} places left` : Number.isFinite(day.remaining) ? `${day.remaining} places left` : 'Open';
+          return (
+            <button
+              key={d}
+              type="button"
+              className={`s-cal-day${d === value ? ' selected' : ''}${d === today ? ' today' : ''}${full || closed ? ' full' : ''}`}
+              disabled={disabled}
+              onClick={() => onChange(d)}
+              aria-pressed={d === value}
+              aria-label={`${new Date(`${d}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })} — ${status}`}
+            >
+              <span>{Number(d.slice(8))}</span>
+              {closed ? <small>Closed</small> : day?.bookable && (full ? <small>Full</small> : low ? <small>{day.remaining} left</small> : null)}
+            </button>
+          );
+        })}
       </div>
-    </Planned>
+      {error && <p className="s-form-note error">{error}</p>}
+    </div>
   );
 }

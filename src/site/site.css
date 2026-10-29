@@ -3973,6 +3973,11 @@ body {
   color: var(--s-green);
 }
 
+.s-status.pending {
+  background: #fff4dc;
+  color: #7a5200;
+}
+
 .s-status.cancelled,
 .s-status.no-show {
   background: #fde8e7;

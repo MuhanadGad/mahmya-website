@@ -112,6 +112,8 @@ export interface PublicBooking {
   /** The boat schedule, with island-time HH:MM times. */
   schedule: { code: string; name: string; checkIn: string; departure: string; returnTime: string };
   programId: ProgramId;
+  /** The package's name when the booking was looked up (the catalog may not be loaded yet). */
+  programName?: string;
   guests: GuestMix;
   addOns: AddOnSelection[];
   quote: Quote;

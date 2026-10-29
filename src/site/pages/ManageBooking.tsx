@@ -11,7 +11,7 @@ import { PageHeader } from '../components/ui';
 import { euro, formatVisitDate, usePageTitle } from '../format';
 import { packageName } from '../../../shared/packages.ts';
 import { loadProfile } from '../profile';
-import { Planned } from '../components/Planned';
+import { toPublicBooking, type BackendPublicBooking } from '../backend';
 
 export default function ManageBooking() {
   usePageTitle('Manage your booking');
@@ -27,7 +27,7 @@ export default function ManageBooking() {
 
   async function lookup(pair: { code: string; email: string }) {
     try {
-      setBooking(await siteFetch<PublicBooking>('/public/bookings/lookup', pair));
+      setBooking(toPublicBooking(await siteFetch<BackendPublicBooking>('/public/bookings/lookup', pair)));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Please try again.');
     } finally {
@@ -52,7 +52,7 @@ export default function ManageBooking() {
     setBusy(true);
     setError(null);
     try {
-      setBooking(await siteFetch<PublicBooking>('/public/bookings/cancel', { code, email }));
+      setBooking(toPublicBooking(await siteFetch<BackendPublicBooking>('/public/bookings/cancel', { code, email })));
       setConfirming(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Please try again.');
@@ -75,8 +75,7 @@ export default function ManageBooking() {
       <section className="s-section">
         <div className="s-container s-manage">
           {!booking ? (
-            <Planned what="Booking lookup">
-              <form className="s-card-panel s-form" onSubmit={find} noValidate>
+            <form className="s-card-panel s-form" onSubmit={find} noValidate>
                 <div className="s-form-row">
                   <label>
                     <span>Booking code</span>
@@ -96,12 +95,11 @@ export default function ManageBooking() {
                   {busy ? 'Looking…' : 'Find my booking'}
                 </button>
               </form>
-            </Planned>
           ) : (
             <div className="s-card-panel">
               <p className="s-eyebrow left">Booking {booking.code}</p>
               <h2 className="s-title-sm">
-                {packageName(booking.programId)} · {formatVisitDate(booking.visitDate)}
+                {booking.programName ?? packageName(booking.programId)} · {formatVisitDate(booking.visitDate)}
               </h2>
               <p className={`s-status ${booking.status}`}>{booking.status === 'cancelled' ? 'Cancelled' : STATUS_LABEL[booking.status]}</p>
               <dl className="s-confirm-grid">
@@ -149,7 +147,7 @@ export default function ManageBooking() {
                   {error}
                 </p>
               )}
-              {booking.status === 'confirmed' &&
+              {(booking.status === 'pending' || booking.status === 'confirmed') &&
                 (booking.cancellable ? (
                   confirming ? (
                     <div className="s-cancel-confirm">

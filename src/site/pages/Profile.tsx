@@ -17,7 +17,7 @@ import { photoOf } from '../../lib/packages';
 import { euro, formatVisitDate, usePageTitle } from '../format';
 import { islandToday } from '../hooks';
 import { forgetDevice, loadProfile, rememberBooking, saveProfile, savedBookings, type GuestProfile, type SavedBooking } from '../profile';
-import { Planned } from '../components/Planned';
+import { toPublicBooking, type BackendPublicBooking } from '../backend';
 
 const EMPTY: GuestProfile = { name: '', email: '', phone: '', nationality: '', hotel: '' };
 const ALL_COUNTRIES = [...COUNTRIES].sort((a, b) => a[1].localeCompare(b[1]));
@@ -28,7 +28,7 @@ function guestsLabel(b: PublicBooking): string {
 }
 
 function BookingCard({ booking }: { booking: PublicBooking }) {
-  const program = { name: packageName(booking.programId), image: photoOf(packageOf(booking.programId)?.photo ?? 'program:beach-lunch') };
+  const program = { name: booking.programName ?? packageName(booking.programId), image: photoOf(packageOf(booking.programId)?.photo ?? 'program:beach-lunch') };
   return (
     <article className="s-mybooking" aria-labelledby={`mb-${booking.code}`}>
       <img src={program.image} alt="" loading="lazy" />
@@ -70,9 +70,9 @@ export default function Profile() {
   const [error, setError] = useState<string | null>(null);
 
   async function load(pairs: SavedBooking[]): Promise<boolean> {
-    const results = await Promise.allSettled(pairs.map((p) => siteFetch<{ bookings: PublicBooking[] }>('/public/bookings/mine', p)));
+    const results = await Promise.allSettled(pairs.map((p) => siteFetch<{ bookings: BackendPublicBooking[] }>('/public/bookings/mine', p).then((r) => r.bookings.map(toPublicBooking))));
     const found = new Map<string, PublicBooking>();
-    for (const r of results) if (r.status === 'fulfilled') for (const b of r.value.bookings) found.set(b.code, b);
+    for (const r of results) if (r.status === 'fulfilled') for (const b of r.value) found.set(b.code, b);
     const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
     setBusy(false);
     if (found.size === 0 && failed) {
@@ -154,8 +154,7 @@ export default function Profile() {
                   )}
                 </>
               )}
-              {bookings && bookings.length === 0 && <p className="s-muted">No bookings found for that email in the last 60 days or ahead.</p>}
-              <Planned what="Booking lookup">
+              {bookings && bookings.length === 0 && <p className="s-muted">No bookings found for that email.</p>}
                 <form className="s-form s-profile-find" onSubmit={lookup} noValidate>
                   <p className="s-muted">{bookings ? 'Booked with another email? Add those bookings too.' : 'Enter any booking code and the email you booked with — we’ll list every booking made with that email.'}</p>
                   <div className="s-form-row">
@@ -186,7 +185,6 @@ export default function Profile() {
                     </Link>
                   </div>
                 </form>
-              </Planned>
             </div>
           </div>
 

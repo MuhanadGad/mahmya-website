@@ -24,12 +24,12 @@ In development Vite proxies `/api` to `API_PROXY_TARGET` (default `http://localh
 | Packages (name, tagline, photo, adult and child price, included add-ons, Day/Sunset trip times) | **Live**: `GET /api/public/catalog` |
 | Add-ons on the booking form (name, time, price, how it's charged) | **Live**: same endpoint |
 | Booking form: package, date, boat, party, add-ons, details, price | Works in the browser on live packages and prices |
-| Confirming a booking | Preview: no public booking endpoint yet, so the button is disabled |
-| Date availability (places left) | Preview: static sample, every future day open with 120 places |
-| Trip extras (snorkelling trip, lunch) | Preview: these are backend add-ons now |
+| Confirming a booking | **Live**: `POST /api/public/bookings`; the booking arrives pending and the confirmation page says it's received |
+| Date availability | **Live rule**: no limit on places; every day from tomorrow is open on the boats the package sails on, and the backend refuses same-day bookings |
 | Weather (homepage card and forecast card) | **Live**: `GET /api/public/weather` (Open-Meteo, cached by mahmya-back); shows "Weather unavailable" when there's no recent reading |
-| Find / cancel my booking, My Profile lookup | Preview: form disabled |
+| Find / cancel my booking, My Profile lookup | **Live**: `/api/public/bookings/lookup`, `/mine` and `/cancel` with the code and email; online cancellation until 24 h before departure |
 | Event and contact enquiries, newsletter | **Live**: validated submissions to mahmya-back; staff see enquiries and subscribers in the dashboard |
+| Dining menus ("Download Menu" on each dining card) | **Live**: `GET /api/public/menus`; staff upload them in the dashboard (Website → Dining menus). An outlet without one shows "Request Menu" |
 | Visit and booking-started counts | Off: nothing is sent |
 | Island, activities, dining, gallery, reviews, FAQ, terms | Static content from the design, the same as the demo |
 
