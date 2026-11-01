@@ -12,35 +12,10 @@ import type { PublicDay } from '../../shared/website.ts';
 import { siteFetch } from './api';
 import { usePackages } from '../lib/packages';
 import { toSiteCatalog, type BackendCatalog } from './backend';
-import { MENU_FILES, type MenuFiles } from './content';
 
 export { useWeather } from './weather';
 
-let menusRequest: Promise<MenuFiles> | null = null;
-let menusLoaded: MenuFiles | null = null;
-
-/** Outlet → menu file uploaded in the dashboard; MENU_FILES until loaded, or if they can't be. */
-export function useMenus(): MenuFiles {
-  const [menus, setMenus] = useState<MenuFiles>(menusLoaded ?? MENU_FILES);
-  useEffect(() => {
-    let alive = true;
-    menusRequest ??= siteFetch<MenuFiles>('/public/menus').then(
-      (loaded) => (menusLoaded = { ...MENU_FILES, ...loaded }),
-      (err) => {
-        menusRequest = null;
-        throw err;
-      },
-    );
-    menusRequest.then(
-      (m) => alive && setMenus(m),
-      () => undefined,
-    );
-    return () => {
-      alive = false;
-    };
-  }, []);
-  return menus;
-}
+export { useContent } from './site-content';
 
 let catalogRequest: Promise<CloudCatalog> | null = null;
 let catalogLoaded: CloudCatalog | null = null;

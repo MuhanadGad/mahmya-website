@@ -6,6 +6,8 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Airplay, Compass, Play, X } from 'lucide-react';
 import { Eyebrow } from '../components/ui';
+import { Rich } from '../components/Rich';
+import { useContent } from '../hooks';
 import beach from '../../assets/site/tour/scrim.jpg';
 import aerial from '../../assets/site/tour/panorama.jpg';
 
@@ -76,14 +78,15 @@ function TourViewer({ onClose }: { onClose: () => void }) {
 /** `home`: the homepage version (275:9620) — the two-line title, View Gallery next to Start and the current-location plate. */
 export function VirtualTour({ home = false }: { home?: boolean }) {
   const [open, setOpen] = useState(false);
+  const tour = useContent()['home.tour'];
   return (
     <section className={`s-vtour${home ? ' home' : ''}`} aria-labelledby="s-vtour-title">
       <div className={home ? 'h-wrap' : 's-container'}>
         <div className="s-vtour-head">
           <div>
-            <Eyebrow className="left">Virtual Tour</Eyebrow>
+            <Eyebrow className="left">{tour.eyebrow}</Eyebrow>
             <h2 id="s-vtour-title" className="s-title-lg left">
-              Explore Mahmya Island Before You Arrive
+              <Rich text={tour.title} />
             </h2>
           </div>
           <div className="s-vtour-actions">
@@ -116,8 +119,8 @@ export function VirtualTour({ home = false }: { home?: boolean }) {
               <p className="s-vtour-plate-label">
                 <span aria-hidden /> Current location
               </p>
-              <p className="s-vtour-plate-title">The Main Beach</p>
-              <p className="s-vtour-plate-text">Take a virtual journey around Mahmya Island before your visit and discover the beaches, activities, dining areas, and unforgettable views waiting for you.</p>
+              <p className="s-vtour-plate-title">{tour.plateTitle}</p>
+              <p className="s-vtour-plate-text">{tour.plateText}</p>
             </div>
           )}
         </div>

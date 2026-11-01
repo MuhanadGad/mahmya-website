@@ -4,7 +4,8 @@
 
 import { useEffect, useState } from 'react';
 import { Eyebrow } from '../components/ui';
-import { DAY_STEPS } from '../content';
+import { Rich } from '../components/Rich';
+import { useContent } from '../hooks';
 import central from '../../assets/site/journey/central-image.jpg';
 import orbit from '../../assets/site/journey/orbit-path.png';
 import halo from '../../assets/site/journey/halo.svg';
@@ -19,20 +20,21 @@ const RINGS = [ring5, ring4, ring3, ring2, ring1];
 const SHIFT = [60, 0, 17, 58, 0, 96, 129, 17];
 
 export function Journey() {
+  const { eyebrow, title, steps } = useContent().daySteps;
   const [active, setActive] = useState(1);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
     if (paused || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const t = window.setInterval(() => setActive((a) => (a + 1) % DAY_STEPS.length), 4000);
+    const t = window.setInterval(() => setActive((a) => (a + 1) % steps.length), 4000);
     return () => window.clearInterval(t);
-  }, [paused]);
+  }, [paused, steps.length]);
 
   const step = (i: number) => {
-    const s = DAY_STEPS[i];
+    const s = steps[i];
     const side = i < 4 ? 'left' : 'right';
     return (
-      <li key={s.title} className={`s-step ${side}${i === active ? ' active' : ''}${i < active ? ' done' : ''}`} style={{ '--shift': SHIFT[i] } as React.CSSProperties}>
+      <li key={i} className={`s-step ${side}${i === active ? ' active' : ''}${i < active ? ' done' : ''}`} style={{ '--shift': SHIFT[i] } as React.CSSProperties}>
         <button type="button" onClick={() => setActive(i)} aria-current={i === active ? 'step' : undefined}>
           <span className="s-step-card">
             <span className="s-step-time">{s.time}</span>
@@ -50,9 +52,9 @@ export function Journey() {
   return (
     <section className="s-journey" aria-labelledby="s-journey-title">
       <div className="s-container s-journey-head">
-        <Eyebrow>The island journey</Eyebrow>
+        <Eyebrow>{eyebrow}</Eyebrow>
         <h2 id="s-journey-title" className="s-title-xl">
-          One Day, Beautifully Unfolded
+          <Rich text={title} />
         </h2>
       </div>
       <div className="s-journey-canvas" onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} onFocus={() => setPaused(true)} onBlur={() => setPaused(false)}>
@@ -67,7 +69,7 @@ export function Journey() {
           <img className="s-journey-orbit" src={orbit} alt="" aria-hidden />
           <img className="s-journey-image" src={central} alt="A boat anchored off Mahmya’s white beach and turquoise reef" loading="lazy" />
           <p className="s-journey-now" aria-live="polite">
-            <span>{DAY_STEPS[active].time}</span> {DAY_STEPS[active].title}
+            <span>{steps[active].time}</span> {steps[active].title}
           </p>
         </div>
         <ol className="s-journey-steps right" start={5}>

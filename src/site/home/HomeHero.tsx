@@ -6,7 +6,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { BookingEngine } from '../components/BookingEngine';
 import { HeroWeather } from '../components/HeroWeather';
-import { useReducedMotion } from '../hooks';
+import { Rich } from '../components/Rich';
+import { useContent, useReducedMotion } from '../hooks';
 import heroVideo from '../../assets/home/hero.mp4';
 import heroPoster from '../../assets/home/hero-poster.jpg';
 import watchBump from '../../assets/home/v2/watch-bump.svg';
@@ -16,6 +17,7 @@ import watchPlay from '../../assets/home/v2/watch-play.svg';
 export function HomeHero() {
   const video = useRef<HTMLVideoElement>(null);
   const reduced = useReducedMotion();
+  const hero = useContent()['home.hero'];
   const [paused, setPaused] = useState<boolean | null>(null);
   const playing = paused === null ? !reduced : !paused;
 
@@ -29,11 +31,9 @@ export function HomeHero() {
   return (
     <section className="h-hero" aria-labelledby="h-hero-title">
       <div className="h-hero-copy">
-        <p className="h-hero-tag">Mahmya · Giftun Island</p>
+        <p className="h-hero-tag">{hero.tag}</p>
         <h1 id="h-hero-title" className="h-hero-title">
-          Your Mahmya
-          <br />
-          Island Escape <span>Starts Here.</span>
+          <Rich text={hero.title} highlight="span" />
         </h1>
       </div>
       {/* On desktop the stage dissolves into the hero; on smaller screens it's the framed video. */}

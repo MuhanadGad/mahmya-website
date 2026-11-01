@@ -29,9 +29,10 @@ In development Vite proxies `/api` to `API_PROXY_TARGET` (default `http://localh
 | Weather (homepage card and forecast card) | **Live**: `GET /api/public/weather` (Open-Meteo, cached by mahmya-back); shows "Weather unavailable" when there's no recent reading |
 | Find / cancel my booking, My Profile lookup | **Live**: `/api/public/bookings/lookup`, `/mine` and `/cancel` with the code and email; online cancellation until 24 h before departure |
 | Event and contact enquiries, newsletter | **Live**: validated submissions to mahmya-back; staff see enquiries and subscribers in the dashboard |
-| Dining menus ("Download Menu" on each dining card) | **Live**: `GET /api/public/menus`; staff upload them in the dashboard (Website → Dining menus). An outlet without one shows "Request Menu" |
+| Dining menus ("Download Menu" on each dining card) | **Live**: each venue's `menu` in `GET /api/public/content`; staff upload them in the dashboard (Website → Dining menus). A venue without one shows "Request Menu" |
+| Website text, photos and links (headings, island day, dining venues, gallery, events, contact, FAQ, terms, cancellation, footer) | **Live**: `GET /api/public/content`, edited in the dashboard (Website → Website content). Until it loads, or if it can't, the site shows the originals in `src/site/site-content.ts`. Photos the content points to are in `public/content/photos` |
 | Visit and booking-started counts | Off: nothing is sent |
-| Island, activities, dining, gallery, reviews, FAQ, terms | Static content from the design, the same as the demo |
+| Activity cards and reviews | Static content from the design, the same as the demo |
 
 Previews are wrapped in `Planned` (`src/site/components/Planned.tsx`): dimmed, outlined, and tagged "Preview · … not live". To connect one, add its path to `LIVE_PATHS` in `src/site/api.ts`, replace the sample data in `src/site/hooks.ts` where it has some, and remove the `Planned` wrapper.
 

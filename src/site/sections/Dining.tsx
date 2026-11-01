@@ -5,11 +5,13 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import { Eyebrow } from '../components/ui';
-import { DINING_NOTE, OUTLETS } from '../content';
+import { useContent } from '../hooks';
 
 export function Dining({ cta = true }: { cta?: boolean }) {
-  const [open, setOpen] = useState(OUTLETS[0].id);
-  const current = OUTLETS.find((o) => o.id === open) ?? OUTLETS[0];
+  const { note, venues } = useContent().dining;
+  const [open, setOpen] = useState(venues[0]?.id);
+  const current = venues.find((o) => o.id === open) ?? venues[0];
+  if (!current) return null;
   return (
     <section className="s-dining" id="dining" aria-labelledby="s-dining-title">
       <div className="s-container">
@@ -29,14 +31,14 @@ export function Dining({ cta = true }: { cta?: boolean }) {
         </div>
         <div className="s-dining-body">
           <div className="s-dining-photo">
-            {OUTLETS.map((o) => (
-              <img key={o.id} src={o.image} alt={o.id === open ? `${o.name} on Mahmya Island` : ''} className={o.id === open ? 'on' : undefined} loading="lazy" />
+            {venues.map((o) => (
+              <img key={o.id} src={o.image} alt={o.id === current.id ? `${o.name} on Mahmya Island` : ''} className={o.id === current.id ? 'on' : undefined} loading="lazy" />
             ))}
             <span className="s-dining-chip">{current.name}</span>
           </div>
           <div className="s-dining-list">
-            {OUTLETS.map((o, i) => {
-              const isOpen = o.id === open;
+            {venues.map((o, i) => {
+              const isOpen = o.id === current.id;
               return (
                 <div key={o.id} className={`s-dining-row${isOpen ? ' open' : ''}`}>
                   <button type="button" className="s-dining-row-head" aria-expanded={isOpen} aria-controls={`dining-${o.id}`} onClick={() => setOpen(o.id)}>
@@ -53,7 +55,7 @@ export function Dining({ cta = true }: { cta?: boolean }) {
                 </div>
               );
             })}
-            <p className="s-dining-note">{DINING_NOTE}</p>
+            <p className="s-dining-note">{note}</p>
           </div>
         </div>
       </div>

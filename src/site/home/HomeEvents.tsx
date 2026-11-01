@@ -2,25 +2,25 @@
 // island from above fading to white behind the text, with Plan Your Event.
 
 import { Link } from 'react-router-dom';
-import events from '../../assets/home/v2/events.jpg';
+import { Rich } from '../components/Rich';
+import { useContent } from '../hooks';
 
 export function HomeEvents() {
+  const events = useContent()['home.events'];
   return (
     <section className="h-events" aria-labelledby="h-events-title">
       <div className="h-events-card">
-        <img src={events} alt="" loading="lazy" />
+        <img src={events.image} alt="" loading="lazy" />
         <div className="h-events-text">
-          <p className="h-events-eyebrow">Events at Mahmya</p>
+          <p className="h-events-eyebrow">{events.eyebrow}</p>
           <h2 id="h-events-title" className="h-events-title">
-            Celebrate Moments That Matter
+            <Rich text={events.title} />
           </h2>
           <p className="h-events-body">
-            Create unforgettable memories surrounded by the beauty of Mahmya Island.
-            <br />
-            From birthdays and anniversaries to private celebrations, the Red Sea creates the perfect backdrop for your special moments.
+            <Rich text={events.body} />
           </p>
           <Link to="/events" className="h-events-btn">
-            Plan Your Event
+            {events.button}
           </Link>
         </div>
       </div>

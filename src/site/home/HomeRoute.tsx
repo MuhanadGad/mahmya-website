@@ -4,8 +4,8 @@
 // "Skip" moves on to the next section. Reduced motion: no autoplay.
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
-import { ISLAND_STOPS } from '../content';
-import { useInView, useReducedMotion } from '../hooks';
+import { Rich } from '../components/Rich';
+import { useContent, useInView, useReducedMotion } from '../hooks';
 import route from '../../assets/home/v2/route.svg';
 import stampPalm from '../../assets/home/v2/stamp-palm.svg';
 import stampPalmSmall from '../../assets/home/v2/stamp-palm-small.svg';
@@ -32,19 +32,22 @@ const ROUTE_H = 473.35;
 const CARD_W = 557;
 
 export function HomeRoute() {
+  const content = useContent();
+  const { stops } = content.islandStops;
+  const head = content['home.route'];
   const section = useRef<HTMLElement>(null);
   const visible = useInView(section);
   const reduced = useReducedMotion();
   const [active, setActive] = useState(0);
   const [stopped, setStopped] = useState<boolean | null>(null);
   const playing = stopped === null ? !reduced : !stopped;
-  const stop = ISLAND_STOPS[active];
+  const stop = stops[active];
 
   useEffect(() => {
     if (!playing || !visible) return;
-    const t = window.setInterval(() => setActive((i) => (i + 1) % ISLAND_STOPS.length), STEP_MS);
+    const t = window.setInterval(() => setActive((i) => (i + 1) % stops.length), STEP_MS);
     return () => window.clearInterval(t);
-  }, [playing, visible]);
+  }, [playing, visible, stops.length]);
 
   const skip = () => {
     setStopped(true);
@@ -64,9 +67,9 @@ export function HomeRoute() {
       <img className="h-route-deco starfish" src={starfish} alt="" width={84} height={89} />
 
       <header className="h-route-head">
-        <p className="h-route-eyebrow">The Island Experience</p>
+        <p className="h-route-eyebrow">{head.eyebrow}</p>
         <h2 id="h-route-title" className="h-route-title">
-          Mahmya Island Experiences
+          <Rich text={head.title} />
         </h2>
         <span className="h-route-accent" aria-hidden />
       </header>
@@ -83,8 +86,8 @@ export function HomeRoute() {
       <div className="h-route-map">
         <img className="h-route-line" src={route} alt="" width={ROUTE_W} height={ROUTE_H} />
         <ol className="h-route-pins" aria-label="The island day">
-          {ISLAND_STOPS.map((s, i) => (
-            <li key={s.label} style={{ left: `${(PINS[i][0] / ROUTE_W) * 100}%`, top: `${(PINS[i][1] / ROUTE_H) * 100}%` }}>
+          {stops.map((s, i) => (
+            <li key={i} style={{ left: `${(PINS[i][0] / ROUTE_W) * 100}%`, top: `${(PINS[i][1] / ROUTE_H) * 100}%` }}>
               <button type="button" className={i === active ? 'on' : undefined} aria-current={i === active ? 'step' : undefined} onClick={() => (setActive(i), setStopped(true))}>
                 <span className="h-route-pin" aria-hidden />
                 <span className="h-route-pin-label">
@@ -97,8 +100,8 @@ export function HomeRoute() {
       </div>
 
       <article className="h-route-card" aria-live={playing ? 'off' : 'polite'}>
-        {ISLAND_STOPS.map((s, i) => (
-          <img key={s.label} src={s.image} alt={i === active ? s.title : ''} className={i === active ? 'on' : undefined} loading="lazy" />
+        {stops.map((s, i) => (
+          <img key={i} src={s.image} alt={i === active ? s.title : ''} className={i === active ? 'on' : undefined} loading="lazy" />
         ))}
         <div className="h-route-glass">
           <h3>{stop.title}</h3>

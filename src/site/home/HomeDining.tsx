@@ -4,30 +4,22 @@
 
 import { Link } from 'react-router-dom';
 import { Mail } from 'lucide-react';
-import type { OutletId } from '../../data/catalog';
-import { OUTLETS, type Outlet } from '../content';
-import { useMenus } from '../hooks';
+import { Rich } from '../components/Rich';
+import { useContent } from '../hooks';
+import type { Venue } from '../site-content';
 import clock from '../../assets/home/v2/clock-dark.svg';
 import clockSolid from '../../assets/home/v2/clock-solid.svg';
 import download from '../../assets/home/v2/download.svg';
 import dots from '../../assets/home/v2/dots-dine.svg';
-import buffet from '../../assets/home/v2/dine-buffet.jpg';
-import alacarte from '../../assets/home/v2/dine-alacarte.jpg';
-import bar from '../../assets/home/v2/dine-bar.jpg';
-import smoothie from '../../assets/home/v2/dine-smoothie.jpg';
 
-const PHOTOS: Record<OutletId, { src: string; position?: string }> = {
-  buffet: { src: buffet, position: 'center 50%' },
-  'a-la-carte': { src: alacarte, position: 'center 86%' },
-  'beach-bar': { src: bar },
-  smoothie: { src: smoothie },
-};
+/** Where the original photos are cropped, as framed in the design. */
+const FOCUS: Record<string, string> = { buffet: 'center 50%', 'a-la-carte': 'center 86%' };
 
-/** "Download Menu" when a menu was uploaded (a PDF or image, opened in a new tab); otherwise the contact form, ready to ask for it. */
-function MenuButton({ outlet, file }: { outlet: Outlet; file?: string }) {
-  if (file) {
+/** "Download Menu" when a menu was uploaded (a PDF or image, opened in a new tab: the file is on the API's origin, where `download` is ignored); otherwise the contact form, ready to ask for it. */
+function MenuButton({ outlet }: { outlet: Venue }) {
+  if (outlet.menu) {
     return (
-      <a className="h-menu-btn" href={file} target="_blank" rel="noreferrer" download aria-label={`Download the ${outlet.name} menu (opens in a new tab)`}>
+      <a className="h-menu-btn" href={outlet.menu} target="_blank" rel="noreferrer" download aria-label={`Download the ${outlet.name} menu (opens in a new tab)`}>
         <img src={download} alt="" width={16} height={16} />
         Download Menu
       </a>
@@ -42,29 +34,30 @@ function MenuButton({ outlet, file }: { outlet: Outlet; file?: string }) {
 }
 
 export function HomeDining({ cta = true }: { cta?: boolean }) {
-  const menus = useMenus();
+  const content = useContent();
+  const head = content['home.dining'];
   return (
     <section className="h-dining" id="dining" aria-labelledby="h-dining-title">
       <header className="h-dining-head">
         <div className="h-dining-text">
-          <p className="h-dining-eyebrow">Island Dining</p>
+          <p className="h-dining-eyebrow">{head.eyebrow}</p>
           <h2 id="h-dining-title" className="h-dining-title">
-            A Taste of Mahmya
+            <Rich text={head.title} />
           </h2>
-          <p className="h-dining-lead">Complete your island experience with fresh flavors, refreshing drinks, and beautiful Red Sea views.</p>
+          <p className="h-dining-lead">{head.lead}</p>
         </div>
         {cta && (
           <Link to="/activities#dining" className="h-dining-cta">
-            Explore Dining
+            {head.button}
           </Link>
         )}
       </header>
       <div className="h-dine-cards">
-        {OUTLETS.map((o) => (
-          <article key={o.id} className={`h-dine${o.id === 'buffet' ? ' wide' : ''}`} aria-labelledby={`h-dine-${o.id}`}>
+        {content.dining.venues.map((o, i) => (
+          <article key={o.id} className={`h-dine${i === 0 ? ' wide' : ''}`} aria-labelledby={`h-dine-${o.id}`}>
             <div className="h-dine-photo">
-              <img src={PHOTOS[o.id].src} alt="" loading="lazy" style={{ objectPosition: PHOTOS[o.id].position }} />
-              {o.id === 'buffet' && <img className="h-dine-dots" src={dots} alt="" width={148} height={31} />}
+              <img src={o.image} alt="" loading="lazy" style={{ objectPosition: o.image.startsWith('/content/') ? FOCUS[o.id] : undefined }} />
+              {i === 0 && <img className="h-dine-dots" src={dots} alt="" width={148} height={31} />}
             </div>
             <div className="h-dine-body">
               <div className="h-dine-info">
@@ -75,7 +68,7 @@ export function HomeDining({ cta = true }: { cta?: boolean }) {
                   {o.hours}
                 </p>
               </div>
-              <MenuButton outlet={o} file={menus[o.id]} />
+              <MenuButton outlet={o} />
             </div>
           </article>
         ))}

@@ -5,8 +5,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Clock, MapPin, Pause, Plane, Play } from 'lucide-react';
 import { Eyebrow } from '../components/ui';
-import { ISLAND_STOPS, LINKS } from '../content';
-import { useInView, useReducedMotion } from '../hooks';
+import { Rich } from '../components/Rich';
+import { useContent, useInView, useReducedMotion } from '../hooks';
 import marinaMap from '../../assets/site/island/marina-map.png';
 
 const STEP_MS = 5000;
@@ -15,8 +15,12 @@ const STEP_MS = 5000;
 export function IslandDay({ home = false }: { home?: boolean }) {
   const autoplay = home;
   const wrap = home ? 'h-wrap' : 's-container';
+  const content = useContent();
+  const { stops } = content.islandStops;
+  const page = content['island.page'];
+  const location = content.location;
   const [active, setActive] = useState(0);
-  const stop = ISLAND_STOPS[active];
+  const stop = stops[active];
   const section = useRef<HTMLElement>(null);
   const visible = useInView(section);
   const reduced = useReducedMotion();
@@ -25,28 +29,28 @@ export function IslandDay({ home = false }: { home?: boolean }) {
 
   useEffect(() => {
     if (!playing || !visible) return;
-    const t = window.setInterval(() => setActive((i) => (i + 1) % ISLAND_STOPS.length), STEP_MS);
+    const t = window.setInterval(() => setActive((i) => (i + 1) % stops.length), STEP_MS);
     return () => window.clearInterval(t);
-  }, [playing, visible]);
+  }, [playing, visible, stops.length]);
 
   return (
     <section className="s-islandday" aria-labelledby="s-islandday-title" ref={section}>
       <header className={`${wrap} s-islandday-head`}>
-        <Eyebrow>The island journey</Eyebrow>
+        <Eyebrow>{page.dayEyebrow}</Eyebrow>
         <h2 id="s-islandday-title" className="s-islandday-title">
-          One day, beautifully unfolded.
+          <Rich text={page.dayTitle} />
         </h2>
-        <p>From the marina to the last swim of the day — ten moments, one current. Follow the route below to see how a Mahmya day actually moves.</p>
+        <p>{page.dayText}</p>
       </header>
       <div className={`${wrap} s-islandday-grid`}>
         <div className="s-islandday-photo">
-          {ISLAND_STOPS.map((s, i) => (
-            <img key={s.label} src={s.image} alt={i === active ? s.title : ''} className={i === active ? 'on' : undefined} loading={i === 0 ? 'eager' : 'lazy'} />
+          {stops.map((s, i) => (
+            <img key={i} src={s.image} alt={i === active ? s.title : ''} className={i === active ? 'on' : undefined} loading={i === 0 ? 'eager' : 'lazy'} />
           ))}
         </div>
         <div className="s-islandday-side">
           <div className="s-islandday-card map" id="location">
-            <a href={LINKS.maps} target="_blank" rel="noreferrer" className="s-islandday-map" aria-label="Open Mahmya Beach Marina in Google Maps">
+            <a href={content.links.maps} target="_blank" rel="noreferrer" className="s-islandday-map" aria-label={`Open ${location.marinaName} in Google Maps`}>
               <img src={marinaMap} alt="Map showing Mahmya Beach Marina on Sheraton Road, Hurghada" loading="lazy" />
             </a>
             <div className="s-landmarks">
@@ -55,8 +59,8 @@ export function IslandDay({ home = false }: { home?: boolean }) {
                   <Plane size={20} />
                 </span>
                 <div>
-                  <p>Hurghada Airport</p>
-                  <small>18 km · about 25 min drive</small>
+                  <p>{location.airportName}</p>
+                  <small>{location.airportDistance}</small>
                 </div>
               </div>
               <div>
@@ -64,8 +68,8 @@ export function IslandDay({ home = false }: { home?: boolean }) {
                   <MapPin size={20} />
                 </span>
                 <div>
-                  <p>Hurghada Mamsha</p>
-                  <small>4.2 km · about 10 min drive</small>
+                  <p>{location.townName}</p>
+                  <small>{location.townDistance}</small>
                 </div>
               </div>
             </div>
@@ -86,9 +90,9 @@ export function IslandDay({ home = false }: { home?: boolean }) {
             {playing ? <Pause size={20} /> : <Play size={20} />}
           </button>
         )}
-        <ol className="s-timeline" style={{ '--progress': `${(active / (ISLAND_STOPS.length - 1)) * 100}%` } as React.CSSProperties}>
-          {ISLAND_STOPS.map((s, i) => (
-            <li key={s.label}>
+        <ol className="s-timeline" style={{ '--progress': `${(active / (stops.length - 1)) * 100}%` } as React.CSSProperties}>
+          {stops.map((s, i) => (
+            <li key={i}>
               <button type="button" className={i === active ? 'on' : i < active ? 'done' : undefined} aria-current={i === active ? 'step' : undefined} onClick={() => (setActive(i), autoplay && setStopped(true))}>
                 <span className="s-timeline-dot" aria-hidden />
                 <span className="s-timeline-label">{s.label}</span>

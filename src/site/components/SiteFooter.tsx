@@ -6,7 +6,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { siteFetch } from '../api';
-import { LINKS } from '../content';
+import { useContent } from '../hooks';
 import eventsWave from '../../assets/site/footer/events-wave.png';
 import logo from '../../assets/site/footer/logo.svg';
 import pin from '../../assets/site/footer/location.svg';
@@ -14,7 +14,6 @@ import instagram from '../../assets/site/footer/instagram.svg';
 import facebook from '../../assets/site/footer/facebook.svg';
 import tiktok from '../../assets/site/footer/tiktok.svg';
 import tripadvisor from '../../assets/site/footer/tripadvisor.svg';
-import beachTile from '../../assets/site/footer/beach-tile.jpg';
 
 const YEAR = new Date().getFullYear();
 
@@ -36,11 +35,11 @@ export function EventsBanner() {
 }
 
 /** The events band across the top of the footer tile (Figma 513:56236 in Footer 260:7453). */
-function EventsBand() {
+function EventsBand({ title }: { title: string }) {
   return (
     <div className="s-footer-band">
       <div className="s-footer-band-text">
-        <p className="s-footer-band-title">Celebrate Moments That Matter</p>
+        <p className="s-footer-band-title">{title}</p>
       </div>
       <Link to="/events" className="s-btn s-btn-outline-dark">
         Plan Your Event
@@ -49,7 +48,7 @@ function EventsBand() {
   );
 }
 
-function Newsletter() {
+function Newsletter({ title, text }: { title: string; text: string }) {
   const [email, setEmail] = useState('');
   const [trap, setTrap] = useState('');
   const [state, setState] = useState<{ kind: 'idle' | 'busy' | 'done' | 'error'; message?: string }>({ kind: 'idle' });
@@ -69,8 +68,8 @@ function Newsletter() {
 
   return (
       <form className="s-newsletter" onSubmit={submit}>
-        <p className="s-footer-strong">Keep Updated on Mahmya Island</p>
-        <p className="s-footer-muted">Add your email to receive the latest Mahmya Island news.</p>
+        <p className="s-footer-strong">{title}</p>
+        <p className="s-footer-muted">{text}</p>
         <div className="s-newsletter-field">
           <label htmlFor="s-newsletter-email" className="s-sr-only">
             Your email
@@ -91,44 +90,46 @@ function Newsletter() {
 }
 
 export function SiteFooter({ events = true, band = false }: { events?: boolean; band?: boolean }) {
+  const { links, footer } = useContent();
   return (
     <footer className={`s-footer${band ? ' band' : ''}`}>
       <div className={band ? 's-footer-wide' : 's-container'}>
         {events && !band && <EventsBanner />}
         <div className="s-footer-tile">
-          {events && band ? <EventsBand /> : <div className="s-footer-divider" />}
+          {events && band ? <EventsBand title={footer.eventsTitle} /> : <div className="s-footer-divider" />}
           <div className="s-footer-grid">
             <div className="s-footer-main">
               <div className="s-footer-cols">
                 <div className="s-footer-brand">
                   <div className="s-footer-logo-row">
                     <img src={logo} alt="Mahmya" width={160} height={62} />
-                    <a className="s-footer-pin" href={LINKS.maps} target="_blank" rel="noreferrer" aria-label="Mahmya on Google Maps">
+                    <a className="s-footer-pin" href={links.maps} target="_blank" rel="noreferrer" aria-label="Mahmya on Google Maps">
                       <img src={pin} alt="" width={28} height={28} />
                     </a>
                   </div>
                   <p className="s-footer-about">
-                    <strong>The Soul Of The Red Sea.</strong>
-                    <br />A premium island experience in Hurghada combining nature, adventure, relaxation, and authentic Egyptian hospitality.
+                    <strong>{footer.tagline}</strong>
+                    <br />
+                    {footer.about}
                   </p>
                   <div className="s-socials">
-                    <a href={LINKS.instagram} target="_blank" rel="noreferrer" aria-label="Instagram">
+                    <a href={links.instagram} target="_blank" rel="noreferrer" aria-label="Instagram">
                       <img src={instagram} alt="" width={24} height={24} />
                     </a>
-                    <a href={LINKS.facebook} target="_blank" rel="noreferrer" aria-label="Facebook">
+                    <a href={links.facebook} target="_blank" rel="noreferrer" aria-label="Facebook">
                       <img src={facebook} alt="" width={28} height={28} />
                     </a>
-                    <a href={LINKS.tiktok} target="_blank" rel="noreferrer" aria-label="TikTok">
+                    <a href={links.tiktok} target="_blank" rel="noreferrer" aria-label="TikTok">
                       <img src={tiktok} alt="" width={22} height={22} />
                     </a>
-                    <a href={LINKS.tripadvisor} target="_blank" rel="noreferrer" aria-label="Tripadvisor">
+                    <a href={links.tripadvisor} target="_blank" rel="noreferrer" aria-label="Tripadvisor">
                       <img src={tripadvisor} alt="" width={28} height={28} />
                     </a>
                   </div>
                 </div>
                 <div className="s-footer-vrule" aria-hidden />
                 <div className="s-footer-right">
-                  <Newsletter />
+                  <Newsletter title={footer.newsletterTitle} text={footer.newsletterText} />
                   <div className="s-footer-hrule" aria-hidden />
                   <div className="s-footer-links">
                     <div>
@@ -184,14 +185,14 @@ export function SiteFooter({ events = true, band = false }: { events?: boolean; 
               <p className="s-footer-copy">© {YEAR} Mahmya Island. All rights reserved.</p>
             </div>
             <aside className="s-beach-tile">
-              <img src={beachTile} alt="Guests relaxing on the Mahmya Beach jetty" loading="lazy" />
+              <img src={footer.beachImage} alt={footer.beachImageAlt} loading="lazy" />
               <div>
-                <p className="s-footer-label">Mahmya Beach</p>
-                <p className="s-beach-title">Welcome to Mahmya Beach</p>
-                <p className="s-footer-muted">A beautiful red sea escape where crystal clear waters, soft sandy beaches, and unforgettable experiences come together.</p>
+                <p className="s-footer-label">{footer.beachLabel}</p>
+                <p className="s-beach-title">{footer.beachTitle}</p>
+                <p className="s-footer-muted">{footer.beachText}</p>
               </div>
-              <a className="s-btn s-btn-primary s-btn-block" href={LINKS.beach} target="_blank" rel="noreferrer">
-                Visit mahmyabeach.com
+              <a className="s-btn s-btn-primary s-btn-block" href={links.beachSite} target="_blank" rel="noreferrer">
+                {footer.beachButton}
               </a>
             </aside>
           </div>

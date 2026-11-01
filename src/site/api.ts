@@ -7,7 +7,7 @@
 
 const API_URL = (import.meta.env.VITE_API_URL ?? '').replace(/\/$/, '');
 
-const LIVE_PATHS = ['/public/catalog', '/public/enquiries', '/public/subscribe', '/public/weather', '/public/bookings', '/public/bookings/lookup', '/public/bookings/mine', '/public/bookings/cancel', '/public/menus'];
+const LIVE_PATHS = ['/public/catalog', '/public/content', '/public/enquiries', '/public/subscribe', '/public/weather', '/public/bookings', '/public/bookings/lookup', '/public/bookings/mine', '/public/bookings/cancel'];
 
 export const NOT_LIVE = 501;
 
